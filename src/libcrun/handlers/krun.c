@@ -49,6 +49,7 @@
 #ifndef NET_FLAG_DHCP_CLIENT
 #  define NET_FLAG_DHCP_CLIENT (1 << 1)
 #endif
+
 /* libkrun has a hard-limit of 16 vCPUs per microVM. */
 #define LIBKRUN_MAX_VCPUS 16
 
@@ -323,7 +324,7 @@ libkrun_configure_vm (uint32_t ctx_id, void *handle, struct krun_config *kconf, 
   int32_t (*krun_add_net_tap) (uint32_t ctx_id, const char *c_tap_name, const uint8_t *c_mac, uint32_t features, uint32_t flags);
   int32_t (*krun_set_gpu_options) (uint32_t ctx_id, uint32_t virgl_flags);
   int32_t (*krun_set_gpu_render_server_fd) (uint32_t ctx_id, int fd);
-  int cpus, ram_mib, nested_virt, ret;
+  int cpus, ram_mib, nested_virt, secret_memory, ret;
   cpu_set_t set;
 
   /* We let the OCI set the number of vCPUs for the VM, since cgroups CPU restrictions still apply. */
@@ -374,6 +375,20 @@ libkrun_configure_vm (uint32_t ctx_id, void *handle, struct krun_config *kconf, 
       ret = krun_set_nested_virt (ctx_id, true);
       if (UNLIKELY (ret < 0))
         return crun_make_error (err, -ret, "could not enable nested virtualization");
+    }
+
+  secret_memory = libkrun_parse_resource_configuration (kconf->config_tree, container, "krun.secret_memory", "secret_memory", false);
+  if (secret_memory > 0)
+    {
+      int32_t (*krun_set_crash_memaction) (uint32_t ctx_id, uint32_t types);
+
+      krun_mark_memaction_secret = dlsym (handle, "krun_mark_memaction_secret");
+      if (krun_mark_memaction_secret == NULL)
+        return crun_make_error (err, 0, "could not find symbol `krun_mark_memaction_secret` in the krun library");
+
+      ret = krun_mark_memaction_secret (ctx_id);
+      if (UNLIKELY (ret < 0))
+        return crun_make_error (err, -ret, "could not mark the microVM memory as secret");
     }
 
   if (kconf->tap_name != NULL)
