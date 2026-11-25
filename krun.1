@@ -345,6 +345,19 @@ virtualization to be enabled on the host (e.g.
 support nested virtualization.
 
 .TP
+\fBkrun.secret_memory\fP=\fINUM\fP
+When set to a value greater than 0, mark the guest RAM of the microVM
+as holding secrets with madvise(2) \fBMADV_CRASH_SECRET\fP, so that if
+the host kernel crashes, its kdump kernel can wipe the guest RAM or
+leave it out of the crash dump.
+
+This needs a host kernel built with the ashen project's crash-memaction
+patch booted with \fBcrash_memaction=secret\fP and libkrun with the
+corresponding ashen patch. On other host kernels the microVM runs unmarked.
+
+Guest RAM is marked, but the VirtioFS DAX window is not marked.
+
+.TP
 \fBkrun.custom_kernel\fP=\fINUM\fP
 When set to a value greater than 0, allow the VM configuration
 file to specify a custom kernel via the \fBkernel_path\fP,
@@ -386,7 +399,8 @@ bytes (defaults to 512 MiB).
 .PP
 The following options are only available through OCI annotations and
 are not read from the configuration file: \fBgpu_flags\fP,
-\fBuse_passt\fP, \fBtap_name\fP, \fBnested_virt\fP, and \fBflavor\fP\&.
+\fBuse_passt\fP, \fBtap_name\fP, \fBnested_virt\fP, \fBsecret_memory\fP,
+and \fBflavor\fP\&.
 
 .PP
 Example:

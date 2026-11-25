@@ -299,6 +299,18 @@ The following annotations are supported:
     **1**). A warning is emitted if the host does not appear to
     support nested virtualization.
 
+**krun.secret_memory**=*NUM*
+:   When set to a value greater than 0, mark the guest RAM of the microVM
+    as holding secrets with madvise(2) **MADV_CRASH_SECRET**, so that if
+    the host kernel crashes, its kdump kernel can wipe the guest RAM or
+    leave it out of the crash dump.
+
+    This needs a host kernel built with the ashen project's crash-memaction
+    patch booted with **crash_memaction=secret** and libkrun with the
+    corresponding ashen patch. On other host kernels the microVM runs unmarked.
+
+    Guest RAM is marked, but the VirtioFS DAX window is not marked.
+
 **krun.custom_kernel**=*NUM*
 :   When set to a value greater than 0, allow the VM configuration
     file to specify a custom kernel via the **kernel_path**,
@@ -332,7 +344,8 @@ optional fields:
 
 The following options are only available through OCI annotations and
 are not read from the configuration file: **gpu_flags**,
-**use_passt**, **tap_name**, **nested_virt**, and **flavor**.
+**use_passt**, **tap_name**, **nested_virt**, **secret_memory**,
+and **flavor**.
 
 Example:
 
